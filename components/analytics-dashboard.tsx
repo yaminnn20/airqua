@@ -182,33 +182,56 @@ export function AnalyticsDashboard() {
             CO₂ Trend(24h)
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-2 sm:px-6">
-          <div className="w-full overflow-x-auto pb-4">
-            <div className="min-w-[600px] h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data24h} margin={chartMargin}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis 
-                    dataKey="timestamp" 
-                    stroke="#94a3b8" 
-                    style={{ fontSize: '11px' }} 
-                    tickMargin={10}
-                    minTickGap={15}
-                  />
-                  <YAxis stroke="#94a3b8" style={{ fontSize: '11px' }} yAxisId="left" />
-                  <YAxis stroke="#94a3b8" style={{ fontSize: '11px' }} yAxisId="right" orientation="right" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '6px' }}
-                    labelStyle={{ color: '#f1f5f9' }}
-                  />
-                  <Legend wrapperStyle={{ color: '#cbd5e1', fontSize: '12px', paddingTop: '10px' }} />
-                  <Bar yAxisId="left" dataKey="co2" fill="#f59e0b" name="CO₂ (ppm)" radius={[2, 2, 0, 0]} />
-                  <Bar yAxisId="right" dataKey="temperature" fill="#3b82f6" name="Temp (°C)" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </CardContent>
+     <CardContent className="px-2 sm:px-6">
+  <div className="w-full overflow-x-auto pb-4">
+    <div className="min-w-[600px] h-[280px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data24h} margin={chartMargin}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+
+          <XAxis
+            dataKey="timestamp"
+            stroke="#94a3b8"
+            style={{ fontSize: '11px' }}
+            tickMargin={10}
+            minTickGap={15}
+          />
+
+          <YAxis
+            stroke="#94a3b8"
+            style={{ fontSize: '11px' }}
+            yAxisId="left"
+          />
+
+          <Tooltip
+            contentStyle={{
+              backgroundColor: '#1e293b',
+              border: '1px solid #475569',
+              borderRadius: '6px',
+            }}
+            labelStyle={{ color: '#f1f5f9' }}
+          />
+
+          <Legend
+            wrapperStyle={{
+              color: '#cbd5e1',
+              fontSize: '12px',
+              paddingTop: '10px',
+            }}
+          />
+
+          <Bar
+            yAxisId="left"
+            dataKey="co2"
+            fill="#f59e0b"
+            name="CO₂ (ppm)"
+            radius={[2, 2, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+</CardContent>
       </Card>
 
       {/* Humidity & Ozone Trend */}
