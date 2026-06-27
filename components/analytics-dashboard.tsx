@@ -179,7 +179,7 @@ export function AnalyticsDashboard() {
         <CardHeader className="pb-2 sm:pb-6">
           <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
             <Activity className="w-5 h-5 text-amber-400" />
-            CO₂ & Temperature Trend (24h)
+            CO₂ Trend(24h)
           </CardTitle>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
