@@ -33,11 +33,11 @@ export function AnalyticsDashboard() {
       try {
         const mockData: ChartData[] = Array.from({ length: 24 }, (_, i) => {
           const phase = (i / 24) * Math.PI * 2
-          
+
           // Using 'numeric' to get shorter labels like "2 PM" instead of "02:00 PM"
           const time = new Date(Date.now() - (24 - i) * 60 * 60 * 1000)
           const shortTime = time.toLocaleTimeString('en-US', { hour: 'numeric' })
-          
+
           return {
             timestamp: shortTime,
             pm25: 12 + Math.sin(phase) * 5 + (Math.random() - 0.5) * 2,
@@ -51,7 +51,7 @@ export function AnalyticsDashboard() {
         })
 
         setData24h(mockData)
-        
+
         const avgPm25 = mockData.reduce((a, b) => a + b.pm25, 0) / mockData.length
         const maxPm25 = Math.max(...mockData.map(d => d.pm25))
         const avgCo2 = mockData.reduce((a, b) => a + b.co2, 0) / mockData.length
@@ -151,10 +151,10 @@ export function AnalyticsDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data24h} margin={chartMargin}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis 
-                    dataKey="timestamp" 
-                    stroke="#94a3b8" 
-                    style={{ fontSize: '11px' }} 
+                  <XAxis
+                    dataKey="timestamp"
+                    stroke="#94a3b8"
+                    style={{ fontSize: '11px' }}
                     tickMargin={10}
                     minTickGap={15}
                   />
@@ -174,64 +174,74 @@ export function AnalyticsDashboard() {
         </CardContent>
       </Card>
 
-      {/* CO2 & Temperature Trend */}
+      {/* CO₂ Trend */}
       <Card className="bg-slate-900 border-slate-700">
         <CardHeader className="pb-2 sm:pb-6">
           <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
             <Activity className="w-5 h-5 text-amber-400" />
-            CO₂ Trend(24h)
+            CO₂ Trend (24h)
           </CardTitle>
         </CardHeader>
-     <CardContent className="px-2 sm:px-6">
-  <div className="w-full overflow-x-auto pb-4">
-    <div className="min-w-[600px] h-[280px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data24h} margin={chartMargin}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
 
-          <XAxis
-            dataKey="timestamp"
-            stroke="#94a3b8"
-            style={{ fontSize: '11px' }}
-            tickMargin={10}
-            minTickGap={15}
-          />
+        <CardContent className="px-2 sm:px-6">
+          <div className="w-full overflow-x-auto pb-4">
+            <div className="min-w-[600px] h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data24h}
+                  margin={chartMargin}
+                  barSize={6}
+                  barCategoryGap="40%"
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#334155"
+                    vertical={false}
+                  />
 
-          <YAxis
-            stroke="#94a3b8"
-            style={{ fontSize: '11px' }}
-            yAxisId="left"
-          />
+                  <XAxis
+                    dataKey="timestamp"
+                    stroke="#94a3b8"
+                    style={{ fontSize: "11px" }}
+                    tickMargin={10}
+                    minTickGap={15}
+                  />
 
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #475569',
-              borderRadius: '6px',
-            }}
-            labelStyle={{ color: '#f1f5f9' }}
-          />
+                  <YAxis
+                    yAxisId="left"
+                    stroke="#94a3b8"
+                    style={{ fontSize: "11px" }}
+                  />
 
-          <Legend
-            wrapperStyle={{
-              color: '#cbd5e1',
-              fontSize: '12px',
-              paddingTop: '10px',
-            }}
-          />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1e293b",
+                      border: "1px solid #475569",
+                      borderRadius: "6px",
+                    }}
+                    labelStyle={{ color: "#f1f5f9" }}
+                  />
 
-          <Bar
-            yAxisId="left"
-            dataKey="co2"
-            fill="#f59e0b"
-            name="CO₂ (ppm)"
-            radius={[2, 2, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-</CardContent>
+                  <Legend
+                    wrapperStyle={{
+                      color: "#cbd5e1",
+                      fontSize: "12px",
+                      paddingTop: "10px",
+                    }}
+                  />
+
+                  <Bar
+                    yAxisId="left"
+                    dataKey="co2"
+                    fill="#f59e0b"
+                    name="CO₂ (ppm)"
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Humidity & Ozone Trend */}
@@ -248,10 +258,10 @@ export function AnalyticsDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data24h} margin={chartMargin}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis 
-                    dataKey="timestamp" 
-                    stroke="#94a3b8" 
-                    style={{ fontSize: '11px' }} 
+                  <XAxis
+                    dataKey="timestamp"
+                    stroke="#94a3b8"
+                    style={{ fontSize: '11px' }}
                     tickMargin={10}
                     minTickGap={15}
                   />
