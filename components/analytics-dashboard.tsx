@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  ResponsiveContainer,
   LineChart,
   Line,
   BarChart,
@@ -12,9 +13,16 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
 } from 'recharts'
-import { TrendingUp, Activity, Wind, Droplets, Thermometer } from 'lucide-react'
+import {
+  Wind,
+  Activity,
+  Droplets,
+  Thermometer,
+  TrendingUp,
+} from 'lucide-react'
+
+type TimeRange = '1h' | '24h' | '7d'
 
 interface ChartData {
   timestamp: string
@@ -27,72 +35,64 @@ interface ChartData {
   ozone: number
 }
 
-type TimeRange = '1h' | '24h' | '7d'
-
 export function AnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>('24h')
   const [data, setData] = useState<ChartData[]>([])
 
-  const [stats, setStats] = useState({
-    avgPm25: 0,
-    avgCo2: 0,
-    avgTemp: 0,
-    avgHumidity: 0,
-  })
-
   useEffect(() => {
-    const points = timeRange === '1h' ? 12 : timeRange === '24h' ? 24 : 7
+    const count = timeRange === '1h' ? 12 : timeRange === '24h' ? 24 : 7
 
-    const generated: ChartData[] = Array.from({ length: points }, (_, i) => {
-      const phase = (i / points) * Math.PI * 2
+    const generated = Array.from({ length: count }, (_, i) => {
+      const phase = (i / count) * Math.PI * 2
 
       let timestamp = ''
 
       if (timeRange === '1h') {
         timestamp = `${i * 5}m`
       } else if (timeRange === '24h') {
-        const t = new Date(Date.now() - (points - i) * 60 * 60 * 1000)
-        timestamp = t.toLocaleTimeString('en-US', { hour: 'numeric' })
+        const d = new Date(Date.now() - (count - i) * 3600000)
+        timestamp = d.toLocaleTimeString('en-US', { hour: 'numeric' })
       } else {
         const d = new Date()
-        d.setDate(d.getDate() - (points - i))
+        d.setDate(d.getDate() - (count - i))
         timestamp = d.toLocaleDateString('en-US', { weekday: 'short' })
       }
 
       return {
         timestamp,
-        pm25: 12 + Math.sin(phase) * 5 + (Math.random() - 0.5) * 2,
-        pm10: 28 + Math.sin(phase + 0.5) * 8 + (Math.random() - 0.5) * 3,
-        pm1: 6 + Math.sin(phase) * 2 + (Math.random() - 0.5),
-        co2: 550 + Math.sin(phase) * 80 + (Math.random() - 0.5) * 20,
-        temperature: 22 + Math.sin(phase) * 3 + (Math.random() - 0.5),
-        humidity: 55 + Math.sin(phase + Math.PI) * 15 + (Math.random() - 0.5) * 5,
-        ozone: 18 + Math.sin(phase + 1) * 6 + (Math.random() - 0.5) * 2,
+        pm25: 12 + Math.sin(phase) * 5,
+        pm10: 28 + Math.sin(phase + 0.5) * 8,
+        pm1: 6 + Math.sin(phase) * 2,
+        co2: 550 + Math.sin(phase) * 80,
+        temperature: 22 + Math.sin(phase) * 3,
+        humidity: 55 + Math.sin(phase + Math.PI) * 15,
+        ozone: 18 + Math.sin(phase + 1) * 6,
       }
     })
 
     setData(generated)
-
-    setStats({
-      avgPm25: generated.reduce((a, b) => a + b.pm25, 0) / generated.length,
-      avgCo2: generated.reduce((a, b) => a + b.co2, 0) / generated.length,
-      avgTemp: generated.reduce((a, b) => a + b.temperature, 0) / generated.length,
-      avgHumidity: generated.reduce((a, b) => a + b.humidity, 0) / generated.length,
-    })
   }, [timeRange])
 
-  const chartMargin = { top: 10, right: 10, left: -20, bottom: 0 }
+  const avg = (key: keyof ChartData) =>
+    data.length
+      ? data.reduce((s, d) => s + Number(d[key]), 0) / data.length
+      : 0
+
+  const chartMargin = {
+    top: 5,
+    right: 0,
+    left: -35,
+    bottom: 0,
+  }
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="w-full max-w-none px-1 sm:px-0 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">
-            Clinical Air Quality Monitor
+          <h2 className="text-xl sm:text-2xl font-bold text-white">
+            Environmental analytics
           </h2>
-          <p className="text-sm text-slate-400">
-            Environmental analytics dashboard
-          </p>
+        
         </div>
 
         <div className="flex gap-2">
@@ -100,7 +100,7 @@ export function AnalyticsDashboard() {
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition
+              className={`px-4 py-2 rounded-md text-sm font-medium transition
                 ${timeRange === range
                   ? 'bg-cyan-500 text-white'
                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
@@ -120,7 +120,7 @@ export function AnalyticsDashboard() {
               PM2.5
             </div>
             <div className="text-2xl font-bold text-cyan-400 mt-2">
-              {stats.avgPm25.toFixed(1)}
+              {avg('pm25').toFixed(1)}
             </div>
           </CardContent>
         </Card>
@@ -132,7 +132,7 @@ export function AnalyticsDashboard() {
               CO₂
             </div>
             <div className="text-2xl font-bold text-amber-400 mt-2">
-              {stats.avgCo2.toFixed(0)}
+              {avg('co2').toFixed(0)}
             </div>
           </CardContent>
         </Card>
@@ -144,7 +144,7 @@ export function AnalyticsDashboard() {
               Temp
             </div>
             <div className="text-2xl font-bold text-blue-400 mt-2">
-              {stats.avgTemp.toFixed(1)}°C
+              {avg('temperature').toFixed(1)}°C
             </div>
           </CardContent>
         </Card>
@@ -156,7 +156,7 @@ export function AnalyticsDashboard() {
               Humidity
             </div>
             <div className="text-2xl font-bold text-green-400 mt-2">
-              {stats.avgHumidity.toFixed(0)}%
+              {avg('humidity').toFixed(0)}%
             </div>
           </CardContent>
         </Card>
@@ -164,10 +164,13 @@ export function AnalyticsDashboard() {
 
       <Card className="bg-slate-900 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-white">Particulate Matter Trend</CardTitle>
+          <CardTitle className="text-white flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-cyan-400" />
+            Particulate Matter Trend
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-[280px] sm:h-[340px]">
+        <CardContent className="px-1 sm:px-4 pb-3">
+          <div className="h-[340px] sm:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={chartMargin}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -175,9 +178,9 @@ export function AnalyticsDashboard() {
                 <YAxis stroke="#94a3b8" />
                 <Tooltip />
                 <Legend />
-                <Line dataKey="pm25" stroke="#06b6d4" strokeWidth={2} dot={false} />
-                <Line dataKey="pm10" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                <Line dataKey="pm1" stroke="#ef4444" strokeWidth={2} dot={false} />
+                <Line dataKey="pm25" stroke="#06b6d4" dot={false} />
+                <Line dataKey="pm10" stroke="#f59e0b" dot={false} />
+                <Line dataKey="pm1" stroke="#ef4444" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -188,21 +191,15 @@ export function AnalyticsDashboard() {
         <CardHeader>
           <CardTitle className="text-white">CO₂ Trend</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-[280px] sm:h-[340px]">
+        <CardContent className="px-1 sm:px-4 pb-3">
+          <div className="h-[340px] sm:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={chartMargin} barCategoryGap="65%">
+              <BarChart data={data} margin={chartMargin} barCategoryGap="70%">
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="timestamp" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
                 <Tooltip />
-                <Legend />
-                <Bar
-                  dataKey="co2"
-                  fill="#f59e0b"
-                  radius={[4, 4, 0, 0]}
-                  barSize={timeRange === '7d' ? 18 : 8}
-                />
+                <Bar dataKey="co2" fill="#f59e0b" barSize={6} radius={[3,3,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -211,12 +208,10 @@ export function AnalyticsDashboard() {
 
       <Card className="bg-slate-900 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-white">
-            Humidity & Ozone Trend
-          </CardTitle>
+          <CardTitle className="text-white">Humidity & Ozone Trend</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-[280px] sm:h-[340px]">
+        <CardContent className="px-1 sm:px-4 pb-3">
+          <div className="h-[340px] sm:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={chartMargin}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -224,8 +219,8 @@ export function AnalyticsDashboard() {
                 <YAxis stroke="#94a3b8" />
                 <Tooltip />
                 <Legend />
-                <Line dataKey="humidity" stroke="#10b981" strokeWidth={2} dot={false} />
-                <Line dataKey="ozone" stroke="#f97316" strokeWidth={2} dot={false} />
+                <Line dataKey="humidity" stroke="#10b981" dot={false} />
+                <Line dataKey="ozone" stroke="#f97316" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -236,16 +231,15 @@ export function AnalyticsDashboard() {
         <CardHeader>
           <CardTitle className="text-white">Temperature Trend</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-[280px] sm:h-[340px]">
+        <CardContent className="px-1 sm:px-4 pb-3">
+          <div className="h-[340px] sm:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={chartMargin}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="timestamp" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
                 <Tooltip />
-                <Legend />
-                <Line dataKey="temperature" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                <Line dataKey="temperature" stroke="#3b82f6" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
