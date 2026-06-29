@@ -2,280 +2,252 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { TrendingUp, Activity, Wind, Droplets } from 'lucide-react'
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { TrendingUp, Activity, Wind, Droplets, Thermometer } from 'lucide-react'
 
 interface ChartData {
   timestamp: string
   pm25: number
   pm10: number
+  pm1: number
   co2: number
   temperature: number
   humidity: number
-  pm1: number
   ozone: number
 }
 
+type TimeRange = '1h' | '24h' | '7d'
+
 export function AnalyticsDashboard() {
-  const [data24h, setData24h] = useState<ChartData[]>([])
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h')
+  const [data, setData] = useState<ChartData[]>([])
+
   const [stats, setStats] = useState({
     avgPm25: 0,
-    maxPm25: 0,
     avgCo2: 0,
-    maxCo2: 0,
     avgTemp: 0,
     avgHumidity: 0,
   })
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const mockData: ChartData[] = Array.from({ length: 24 }, (_, i) => {
-          const phase = (i / 24) * Math.PI * 2
+    const points = timeRange === '1h' ? 12 : timeRange === '24h' ? 24 : 7
 
-          // Using 'numeric' to get shorter labels like "2 PM" instead of "02:00 PM"
-          const time = new Date(Date.now() - (24 - i) * 60 * 60 * 1000)
-          const shortTime = time.toLocaleTimeString('en-US', { hour: 'numeric' })
+    const generated: ChartData[] = Array.from({ length: points }, (_, i) => {
+      const phase = (i / points) * Math.PI * 2
 
-          return {
-            timestamp: shortTime,
-            pm25: 12 + Math.sin(phase) * 5 + (Math.random() - 0.5) * 2,
-            pm10: 28 + Math.sin(phase + 0.5) * 8 + (Math.random() - 0.5) * 3,
-            co2: 550 + Math.sin(phase) * 80 + (Math.random() - 0.5) * 20,
-            temperature: 22 + Math.sin(phase) * 3 + (Math.random() - 0.5) * 1,
-            humidity: 55 + Math.sin(phase + Math.PI) * 15 + (Math.random() - 0.5) * 5,
-            pm1: 6 + Math.sin(phase) * 2 + (Math.random() - 0.5) * 1,
-            ozone: 18 + Math.sin(phase + 1) * 6 + (Math.random() - 0.5) * 2,
-          }
-        })
+      let timestamp = ''
 
-        setData24h(mockData)
-
-        const avgPm25 = mockData.reduce((a, b) => a + b.pm25, 0) / mockData.length
-        const maxPm25 = Math.max(...mockData.map(d => d.pm25))
-        const avgCo2 = mockData.reduce((a, b) => a + b.co2, 0) / mockData.length
-        const maxCo2 = Math.max(...mockData.map(d => d.co2))
-        const avgTemp = mockData.reduce((a, b) => a + b.temperature, 0) / mockData.length
-        const avgHumidity = mockData.reduce((a, b) => a + b.humidity, 0) / mockData.length
-
-        setStats({ avgPm25, maxPm25, avgCo2, maxCo2, avgTemp, avgHumidity })
-      } catch (error) {
-        console.error('[v0] Error fetching analytics:', error)
-      } finally {
-        setLoading(false)
+      if (timeRange === '1h') {
+        timestamp = `${i * 5}m`
+      } else if (timeRange === '24h') {
+        const t = new Date(Date.now() - (points - i) * 60 * 60 * 1000)
+        timestamp = t.toLocaleTimeString('en-US', { hour: 'numeric' })
+      } else {
+        const d = new Date()
+        d.setDate(d.getDate() - (points - i))
+        timestamp = d.toLocaleDateString('en-US', { weekday: 'short' })
       }
-    }
 
-    fetchData()
-  }, [])
+      return {
+        timestamp,
+        pm25: 12 + Math.sin(phase) * 5 + (Math.random() - 0.5) * 2,
+        pm10: 28 + Math.sin(phase + 0.5) * 8 + (Math.random() - 0.5) * 3,
+        pm1: 6 + Math.sin(phase) * 2 + (Math.random() - 0.5),
+        co2: 550 + Math.sin(phase) * 80 + (Math.random() - 0.5) * 20,
+        temperature: 22 + Math.sin(phase) * 3 + (Math.random() - 0.5),
+        humidity: 55 + Math.sin(phase + Math.PI) * 15 + (Math.random() - 0.5) * 5,
+        ozone: 18 + Math.sin(phase + 1) * 6 + (Math.random() - 0.5) * 2,
+      }
+    })
 
-  if (loading) {
-    return (
-      <div className="text-center text-slate-400 py-8">Loading analytics...</div>
-    )
-  }
+    setData(generated)
 
-  // Adjusted margins to give the chart maximum breathing room
+    setStats({
+      avgPm25: generated.reduce((a, b) => a + b.pm25, 0) / generated.length,
+      avgCo2: generated.reduce((a, b) => a + b.co2, 0) / generated.length,
+      avgTemp: generated.reduce((a, b) => a + b.temperature, 0) / generated.length,
+      avgHumidity: generated.reduce((a, b) => a + b.humidity, 0) / generated.length,
+    })
+  }, [timeRange])
+
   const chartMargin = { top: 10, right: 10, left: -20, bottom: 0 }
 
   return (
     <div className="space-y-6 w-full">
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white">
+            Clinical Air Quality Monitor
+          </h2>
+          <p className="text-sm text-slate-400">
+            Environmental analytics dashboard
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          {(['1h', '24h', '7d'] as TimeRange[]).map((range) => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition
+                ${timeRange === range
+                  ? 'bg-cyan-500 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                }`}
+            >
+              {range.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-slate-900 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-slate-300">
               <Wind className="w-4 h-4 text-cyan-400" />
-              Avg PM2.5 (24h)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-cyan-400">{stats.avgPm25.toFixed(1)}</div>
-            <p className="text-xs text-slate-500 mt-1">Peak: {stats.maxPm25.toFixed(1)} µg/m³</p>
+              PM2.5
+            </div>
+            <div className="text-2xl font-bold text-cyan-400 mt-2">
+              {stats.avgPm25.toFixed(1)}
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-slate-900 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-slate-300">
               <Activity className="w-4 h-4 text-amber-400" />
-              Avg CO₂ (24h)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-400">{stats.avgCo2.toFixed(0)}</div>
-            <p className="text-xs text-slate-500 mt-1">Peak: {stats.maxCo2.toFixed(0)} ppm</p>
+              CO₂
+            </div>
+            <div className="text-2xl font-bold text-amber-400 mt-2">
+              {stats.avgCo2.toFixed(0)}
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-slate-900 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <Droplets className="w-4 h-4 text-blue-400" />
-              Avg Temperature
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-400">{stats.avgTemp.toFixed(1)}°C</div>
-            <p className="text-xs text-slate-500 mt-1">Comfortable range</p>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-slate-300">
+              <Thermometer className="w-4 h-4 text-blue-400" />
+              Temp
+            </div>
+            <div className="text-2xl font-bold text-blue-400 mt-2">
+              {stats.avgTemp.toFixed(1)}°C
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-slate-900 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-slate-300">
               <Droplets className="w-4 h-4 text-green-400" />
-              Avg Humidity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-400">{stats.avgHumidity.toFixed(0)}%</div>
-            <p className="text-xs text-slate-500 mt-1">Last 24 hours</p>
+              Humidity
+            </div>
+            <div className="text-2xl font-bold text-green-400 mt-2">
+              {stats.avgHumidity.toFixed(0)}%
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* PM2.5 & PM10 Trend Chart */}
       <Card className="bg-slate-900 border-slate-700">
-        <CardHeader className="pb-2 sm:pb-6">
-          <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
-            <TrendingUp className="w-5 h-5 text-cyan-400" />
-            Particulate Matter Trend (24h)
-          </CardTitle>
+        <CardHeader>
+          <CardTitle className="text-white">Particulate Matter Trend</CardTitle>
         </CardHeader>
-        <CardContent className="px-2 sm:px-6">
-          {/* THE FIX: Horizontal scroll wrapper */}
-          <div className="w-full overflow-x-auto pb-4">
-            <div className="min-w-[600px] h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data24h} margin={chartMargin}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis
-                    dataKey="timestamp"
-                    stroke="#94a3b8"
-                    style={{ fontSize: '11px' }}
-                    tickMargin={10}
-                    minTickGap={15}
-                  />
-                  <YAxis stroke="#94a3b8" style={{ fontSize: '11px' }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '6px' }}
-                    labelStyle={{ color: '#f1f5f9' }}
-                  />
-                  <Legend wrapperStyle={{ color: '#cbd5e1', fontSize: '12px', paddingTop: '10px' }} />
-                  <Line type="monotone" dataKey="pm25" stroke="#06b6d4" dot={false} name="PM2.5" strokeWidth={2} />
-                  <Line type="monotone" dataKey="pm10" stroke="#f59e0b" dot={false} name="PM10" strokeWidth={2} />
-                  <Line type="monotone" dataKey="pm1" stroke="#ef4444" dot={false} name="PM1" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+        <CardContent>
+          <div className="h-[280px] sm:h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={chartMargin}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="timestamp" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip />
+                <Legend />
+                <Line dataKey="pm25" stroke="#06b6d4" strokeWidth={2} dot={false} />
+                <Line dataKey="pm10" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                <Line dataKey="pm1" stroke="#ef4444" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* CO₂ Trend */}
       <Card className="bg-slate-900 border-slate-700">
-        <CardHeader className="pb-2 sm:pb-6">
-          <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
-            <Activity className="w-5 h-5 text-amber-400" />
-            CO₂ Trend (24h)
-          </CardTitle>
+        <CardHeader>
+          <CardTitle className="text-white">CO₂ Trend</CardTitle>
         </CardHeader>
-
-        <CardContent className="px-2 sm:px-6">
-          <div className="w-full overflow-x-auto pb-4">
-            <div className="min-w-[600px] h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={data24h}
-                  margin={chartMargin}
-                  barSize={6}
-                  barCategoryGap="40%"
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#334155"
-                    vertical={false}
-                  />
-
-                  <XAxis
-                    dataKey="timestamp"
-                    stroke="#94a3b8"
-                    style={{ fontSize: "11px" }}
-                    tickMargin={10}
-                    minTickGap={15}
-                  />
-
-                  <YAxis
-                    yAxisId="left"
-                    stroke="#94a3b8"
-                    style={{ fontSize: "11px" }}
-                  />
-
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1e293b",
-                      border: "1px solid #475569",
-                      borderRadius: "6px",
-                    }}
-                    labelStyle={{ color: "#f1f5f9" }}
-                  />
-
-                  <Legend
-                    wrapperStyle={{
-                      color: "#cbd5e1",
-                      fontSize: "12px",
-                      paddingTop: "10px",
-                    }}
-                  />
-
-                  <Bar
-                    yAxisId="left"
-                    dataKey="co2"
-                    fill="#f59e0b"
-                    name="CO₂ (ppm)"
-                    radius={[2, 2, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        <CardContent>
+          <div className="h-[280px] sm:h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={chartMargin} barCategoryGap="65%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="timestamp" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip />
+                <Legend />
+                <Bar
+                  dataKey="co2"
+                  fill="#f59e0b"
+                  radius={[4, 4, 0, 0]}
+                  barSize={timeRange === '7d' ? 18 : 8}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Humidity & Ozone Trend */}
       <Card className="bg-slate-900 border-slate-700">
-        <CardHeader className="pb-2 sm:pb-6">
-          <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
-            <Droplets className="w-5 h-5 text-green-400" />
-            Humidity & Ozone Trend (24h)
+        <CardHeader>
+          <CardTitle className="text-white">
+            Humidity & Ozone Trend
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-2 sm:px-6">
-          <div className="w-full overflow-x-auto pb-4">
-            <div className="min-w-[600px] h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data24h} margin={chartMargin}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis
-                    dataKey="timestamp"
-                    stroke="#94a3b8"
-                    style={{ fontSize: '11px' }}
-                    tickMargin={10}
-                    minTickGap={15}
-                  />
-                  <YAxis stroke="#94a3b8" style={{ fontSize: '11px' }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '6px' }}
-                    labelStyle={{ color: '#f1f5f9' }}
-                  />
-                  <Legend wrapperStyle={{ color: '#cbd5e1', fontSize: '12px', paddingTop: '10px' }} />
-                  <Line type="monotone" dataKey="humidity" stroke="#10b981" dot={false} name="Humidity (%)" strokeWidth={2} />
-                  <Line type="monotone" dataKey="ozone" stroke="#f97316" dot={false} name="Ozone (ppb)" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+        <CardContent>
+          <div className="h-[280px] sm:h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={chartMargin}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="timestamp" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip />
+                <Legend />
+                <Line dataKey="humidity" stroke="#10b981" strokeWidth={2} dot={false} />
+                <Line dataKey="ozone" stroke="#f97316" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-slate-900 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-white">Temperature Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px] sm:h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={chartMargin}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="timestamp" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip />
+                <Legend />
+                <Line dataKey="temperature" stroke="#3b82f6" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
