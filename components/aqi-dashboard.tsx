@@ -40,7 +40,7 @@ export function AQIDashboard() {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('connecting')
   const [connectionError, setConnectionError] = useState<string>('')
   const [config, setConfig] = useState({
-    url: 'wss://6f531f996847447c865f0c0f71186bfe.s1.eu.hivemq.cloud:8884/mqtt',
+    url: 'wss://n262659d.ala.asia-southeast1.emqxsl.com:8084/mqtt',
     username: 'yamm19',
     password: 'Yamin9697',
   })
