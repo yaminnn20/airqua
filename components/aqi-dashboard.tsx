@@ -212,9 +212,9 @@ export function AQIDashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 -mt-8">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">Clinical Air Quality Monitor</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">Medical Air Quality Monitor</h1>
           <p className="text-slate-400 text-sm mt-1">Chest Diseases Hospital Ward</p>
         </div>
         <div className="relative">
