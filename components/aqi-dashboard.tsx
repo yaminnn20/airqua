@@ -302,7 +302,7 @@ export function AQIDashboard() {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
             Medical Air Quality Monitor
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Chest Diseases Hospital — ICU / Ward</p>
+          <p className="text-slate-400 text-sm mt-1">Chest Diseases Hospital</p>
         </div>
 
         <div className="relative">
