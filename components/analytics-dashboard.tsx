@@ -34,38 +34,72 @@ export function AnalyticsDashboard() {
   const [data, setData] = useState<ChartData[]>([])
 
   useEffect(() => {
-    const count = timeRange === '1h' ? 12 : timeRange === '24h' ? 24 : 7
-    
-    // Offset so the mathematical averages change for each range
-    const rangeOffset = timeRange === '1h' ? 5 : timeRange === '24h' ? 0 : -3
-
-    const generated = Array.from({ length: count }, (_, i) => {
-      const phase = (i / count) * Math.PI * 2
-      let timestamp = ''
-      
-      if (timeRange === '1h') {
-        timestamp = `${i * 5}m`
-      } else if (timeRange === '24h') {
-        const d = new Date(Date.now() - (count - i) * 3600000)
-        timestamp = d.toLocaleTimeString('en-US', { hour: 'numeric' })
-      } else {
-        const d = new Date()
-        d.setDate(d.getDate() - (count - i))
-        timestamp = d.toLocaleDateString('en-US', { weekday: 'short' })
+    const fetchData = async () => {
+      try {
+        const hours = timeRange === '1h' ? '1' : timeRange === '24h' ? '24' : '168'
+        const response = await fetch(`/api/sensor-data?hours=${hours}&hospitalId=default`)
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch sensor data')
+        }
+        
+        const result = await response.json()
+        
+        if (result.success && result.data && result.data.length > 0) {
+          // Transform database data for charts
+          const chartData = result.data.map((item: any) => ({
+            timestamp: new Date(item.timestamp).toLocaleTimeString('en-US', { hour: '2-digit' }),
+            pm25: parseFloat(item.pm25) || 0,
+            pm10: parseFloat(item.pm10) || 0,
+            pm1: parseFloat(item.pm1) || 0,
+            co2: parseFloat(item.co2) || 0,
+            temperature: parseFloat(item.temperature) || 0,
+            humidity: parseFloat(item.humidity) || 0,
+            ozone: parseFloat(item.ozone) || 0,
+          }))
+          
+          setData(chartData)
+          return
+        }
+      } catch (error) {
+        console.log('[v0] Error fetching real data, using fallback mock data:', error)
       }
       
-      return {
-        timestamp,
-        pm25: 12 + rangeOffset + Math.sin(phase) * 5 + Math.random() * 2,
-        pm10: 28 + rangeOffset + Math.sin(phase + 0.5) * 8,
+      // Fallback to mock data if database is empty or error occurs
+      const count = timeRange === '1h' ? 12 : timeRange === '24h' ? 24 : 7
+      const rangeOffset = timeRange === '1h' ? 5 : timeRange === '24h' ? 0 : -3
+
+      const generated = Array.from({ length: count }, (_, i) => {
+        const phase = (i / count) * Math.PI * 2
+        let timestamp = ''
+        
+        if (timeRange === '1h') {
+          timestamp = `${i * 5}m`
+        } else if (timeRange === '24h') {
+          const d = new Date(Date.now() - (count - i) * 3600000)
+          timestamp = d.toLocaleTimeString('en-US', { hour: 'numeric' })
+        } else {
+          const d = new Date()
+          d.setDate(d.getDate() - (count - i))
+          timestamp = d.toLocaleDateString('en-US', { weekday: 'short' })
+        }
+        
+        return {
+          timestamp,
+          pm25: 12 + rangeOffset + Math.sin(phase) * 5 + Math.random() * 2,
+          pm10: 28 + rangeOffset + Math.sin(phase + 0.5) * 8,
         pm1: 6 + (rangeOffset * 0.5) + Math.sin(phase) * 2,
         co2: 550 + (rangeOffset * 15) + Math.sin(phase) * 80 + Math.random() * 10,
         temperature: 22 + (rangeOffset * 0.3) + Math.sin(phase) * 3,
         humidity: 55 + rangeOffset + Math.sin(phase + Math.PI) * 15,
         ozone: 18 + rangeOffset + Math.sin(phase + 1) * 6,
-      }
-    })
-    setData(generated)
+        }
+      })
+      
+      setData(generated)
+    }
+    
+    fetchData()
   }, [timeRange])
 
   const averages = useMemo(() => {
