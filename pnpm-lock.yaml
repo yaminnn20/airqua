@@ -57,6 +57,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.2.0
         version: 4.2.0
+      '@types/mqtt':
+        specifier: ^2.5.0
+        version: 2.5.0
       '@types/node':
         specifier: ^24
         version: 24.10.4
@@ -739,6 +742,10 @@ packages:
 
   '@types/d3-timer@3.0.2':
     resolution: {integrity: sha512-Ps3T8E8dZDam6fUyNiMkekK3XUsaUEik+idO9/YjPtfj2qruF8tFBXS7XhtE4iIXBLxhmLjP3SXpLhVf21I9Lw==}
+
+  '@types/mqtt@2.5.0':
+    resolution: {integrity: sha512-n+0/ErBin30j+UbhcHGK/STjHjh65k85WNR6NlUjRG0g9yctpF12pS+SOkwz0wmp+7momAo9Cyi4Wmvy8UsCQg==}
+    deprecated: This is a stub types definition for MQTT (https://github.com/mqttjs/MQTT.js). MQTT provides its own type definitions, so you don't need @types/mqtt installed!
 
   '@types/node@24.10.4':
     resolution: {integrity: sha512-vnDVpYPMzs4wunl27jHrfmwojOGKya0xyM3sH+UE5iv5uPS6vX7UIoh6m+vQc5LGBq52HBKPIn/zcSZVzeDEZg==}
@@ -3002,6 +3009,14 @@ snapshots:
   '@types/d3-time@3.0.4': {}
 
   '@types/d3-timer@3.0.2': {}
+
+  '@types/mqtt@2.5.0':
+    dependencies:
+      mqtt: 5.15.1
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
 
   '@types/node@24.10.4':
     dependencies:
