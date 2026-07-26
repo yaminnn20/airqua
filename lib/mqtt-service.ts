@@ -11,15 +11,21 @@ export async function startMQTTService() {
   }
 
   try {
-    const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://emqx.eqmx.local:1883'
+    const MQTT_URL = process.env.MQTT_URL || 'wss://n262659d.ala.asia-southeast1.emqxsl.com:8084/mqtt'
+    const MQTT_USERNAME = process.env.MQTT_USERNAME || 'yamm19'
+    const MQTT_PASSWORD = process.env.MQTT_PASSWORD || 'Yamin9697'
     const MQTT_TOPIC = process.env.MQTT_TOPIC || 'homeassistant/sensor/esp32_air/state'
 
-    console.log('[MQTT] Connecting to broker:', MQTT_BROKER)
+    console.log('[MQTT] Connecting to broker:', MQTT_URL)
 
-    client = mqtt.connect(MQTT_BROKER, {
+    client = mqtt.connect(MQTT_URL, {
+      username: MQTT_USERNAME,
+      password: MQTT_PASSWORD,
       clientId: `airqua-service-${Date.now()}`,
       reconnectPeriod: 5000,
       keepalive: 60,
+      protocol: 'wss',
+      path: '/mqtt',
     })
 
     client.on('connect', () => {
