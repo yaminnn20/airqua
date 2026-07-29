@@ -3,12 +3,11 @@ import { getPool } from './db'
 
 let client: mqtt.MqttClient | null = null
 let isConnected = false
-let lastDataSaveTime = 0
 const THROTTLE_INTERVAL = 3000 // Save 1 reading per 3 seconds
 let reconnectAttempts = 0
 const MAX_RECONNECT_ATTEMPTS = 10
-let messageQueue: any[] = []
-let processing = false
+let latestMessage: any = null // Hold latest message
+let lastSaveTime = 0 // Track last save timestamp for throttling
 
 export async function startMQTTService() {
   if (client) {
@@ -49,51 +48,46 @@ export async function startMQTTService() {
       })
     })
 
-    client.on('message', async (topic, message) => {
+    client.on('message', (topic, message) => {
       try {
-        const data = JSON.parse(message.toString())
-        const now = Date.now()
-        
-        // Throttle: only save if 3 seconds have passed
-        if (now - lastDataSave < THROTTLE_INTERVAL) {
-          return
-        }
-        
-        // Prevent concurrent saves
-        if (isSaving) {
-          return
-        }
-        
-        isSaving = true
-        try {
-          lastDataSave = now
-          
-          // Save to database
-          const pool = getPool()
-          await pool.query(
-            `INSERT INTO sensor_readings (pm1, pm25, pm10, co2, ozone, tvoc, temperature, humidity, aqi, hospital_id, timestamp)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
-            [
-              data.pm1 ?? null,
-              data.pm25 ?? null,
-              data.pm10 ?? null,
-              data.co2 ?? null,
-              data.ozone ?? null,
-              data.tvoc ?? null,
-              data.temperature ?? null,
-              data.humidity ?? null,
-              data.aqi ?? null,
-              'default',
-            ]
-          )
-        } finally {
-          isSaving = false
-        }
+        // Just store the latest message
+        latestMessage = JSON.parse(message.toString())
       } catch (err) {
-        console.error('[MQTT] Error processing message:', err instanceof Error ? err.message : err)
-        isSaving = false
+        console.error('[MQTT] Error parsing message:', err instanceof Error ? err.message : err)
       }
     })
+
+    // Save latest message every 3 seconds using timestamp-based throttling
+    setInterval(async () => {
+      try {
+        if (latestMessage && isConnected) {
+          const now = Date.now()
+          // Only save if 3 seconds have passed since last save
+          if (now - lastSaveTime >= THROTTLE_INTERVAL) {
+            lastSaveTime = now
+            const pool = getPool()
+            await pool.query(
+              `INSERT INTO sensor_readings (pm1, pm25, pm10, co2, ozone, tvoc, temperature, humidity, aqi, hospital_id, timestamp)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
+              [
+                latestMessage.pm1 ?? null,
+                latestMessage.pm25 ?? null,
+                latestMessage.pm10 ?? null,
+                latestMessage.co2 ?? null,
+                latestMessage.ozone ?? null,
+                latestMessage.tvoc ?? null,
+                latestMessage.temperature ?? null,
+                latestMessage.humidity ?? null,
+                latestMessage.aqi ?? null,
+                'default',
+              ]
+            )
+          }
+        }
+      } catch (err) {
+        console.error('[MQTT] Error saving to database:', err instanceof Error ? err.message : err)
+      }
+    }, 1000) // Check every second, but only save if 3+ seconds have passed
 
     client.on('error', (err) => {
       console.error('[MQTT] Connection error:', err instanceof Error ? err.message : err)
