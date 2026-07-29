@@ -1,37 +1,14 @@
 import mqtt from 'mqtt'
 import { getPool } from './db'
-import * as fs from 'fs'
-import * as path from 'path'
 
 let client: mqtt.MqttClient | null = null
 let isConnected = false
-let lastDataSave = 0
+let lastDataSaveTime = 0
 const THROTTLE_INTERVAL = 3000 // Save 1 reading per 3 seconds
 let reconnectAttempts = 0
 const MAX_RECONNECT_ATTEMPTS = 10
-const THROTTLE_FILE = path.join(process.cwd(), '.mqtt-throttle')
-
-// Load last save time from file
-function loadLastSaveTime(): number {
-  try {
-    if (fs.existsSync(THROTTLE_FILE)) {
-      const data = fs.readFileSync(THROTTLE_FILE, 'utf-8')
-      return parseInt(data, 10) || 0
-    }
-  } catch (e) {
-    // Ignore errors
-  }
-  return 0
-}
-
-// Save last save time to file
-function saveLastSaveTime(time: number): void {
-  try {
-    fs.writeFileSync(THROTTLE_FILE, String(time), 'utf-8')
-  } catch (e) {
-    // Ignore errors
-  }
-}
+let messageQueue: any[] = []
+let processing = false
 
 export async function startMQTTService() {
   if (client) {
@@ -77,34 +54,44 @@ export async function startMQTTService() {
         const data = JSON.parse(message.toString())
         const now = Date.now()
         
-        // Throttle: only save to database once per 3 seconds
+        // Throttle: only save if 3 seconds have passed
         if (now - lastDataSave < THROTTLE_INTERVAL) {
           return
         }
         
-        lastDataSave = now
+        // Prevent concurrent saves
+        if (isSaving) {
+          return
+        }
         
-        // Save to database
-        const pool = getPool()
-        await pool.query(
-          `INSERT INTO sensor_readings (pm1, pm25, pm10, co2, ozone, tvoc, temperature, humidity, aqi, hospital_id, timestamp)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
-          [
-            data.pm1 ?? null,
-            data.pm25 ?? null,
-            data.pm10 ?? null,
-            data.co2 ?? null,
-            data.ozone ?? null,
-            data.tvoc ?? null,
-            data.temperature ?? null,
-            data.humidity ?? null,
-            data.aqi ?? null,
-            'default',
-          ]
-        )
-        console.log('[MQTT] Data saved')
+        isSaving = true
+        try {
+          lastDataSave = now
+          
+          // Save to database
+          const pool = getPool()
+          await pool.query(
+            `INSERT INTO sensor_readings (pm1, pm25, pm10, co2, ozone, tvoc, temperature, humidity, aqi, hospital_id, timestamp)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
+            [
+              data.pm1 ?? null,
+              data.pm25 ?? null,
+              data.pm10 ?? null,
+              data.co2 ?? null,
+              data.ozone ?? null,
+              data.tvoc ?? null,
+              data.temperature ?? null,
+              data.humidity ?? null,
+              data.aqi ?? null,
+              'default',
+            ]
+          )
+        } finally {
+          isSaving = false
+        }
       } catch (err) {
         console.error('[MQTT] Error processing message:', err instanceof Error ? err.message : err)
+        isSaving = false
       }
     })
 
