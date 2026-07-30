@@ -96,24 +96,7 @@ export function AQIDashboard() {
               tvoc: data.tvoc ?? null,
               lastUpdate: new Date(),
             })
-
-            // Save MQTT data to database for analytics/historical tracking
-            fetch('/api/sensor-data', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                pm1: data.pm1 ?? null,
-                pm25: data.pm25 ?? null,
-                pm10: data.pm10 ?? null,
-                co2: data.co2 ?? null,
-                ozone: data.ozone ?? null,
-                tvoc: data.tvoc ?? null,
-                temperature: data.temperature ?? null,
-                humidity: data.humidity ?? null,
-                aqi: data.aqi ?? null,
-                hospital_id: 'default',
-              }),
-            }).catch(err => console.error('[v0] Failed to save to database:', err))
+            // Database persistence is handled by backend MQTT service
           } catch (err) {
             console.error('Invalid JSON:', err)
           }
