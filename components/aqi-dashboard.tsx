@@ -127,39 +127,42 @@ export function AQIDashboard() {
     setIsConfigDropdownOpen(false)
   }
 
-  // ── Respiratory Risk Factor (original) ──────────────────────────────────────
+  // ── Respiratory Risk Factor (Scaled 0–10) ──────────────────────────────────
   const calculateRiskFactor = (): { score: number; label: string; color: string } => {
     let riskScore = 0
     if (metrics.pm25 !== null) {
-      if (metrics.pm25 > 35) riskScore += 40
-      else if (metrics.pm25 > 10) riskScore += 25
-      else if (metrics.pm25 > 5) riskScore += 10
+      if (metrics.pm25 > 35) riskScore += 4.0
+      else if (metrics.pm25 > 10) riskScore += 2.5
+      else if (metrics.pm25 > 5) riskScore += 1.0
     }
     if (metrics.co2 !== null) {
-      if (metrics.co2 > 800) riskScore += 40
-      else if (metrics.co2 > 600) riskScore += 25
-      else if (metrics.co2 > 400) riskScore += 10
+      if (metrics.co2 > 800) riskScore += 4.0
+      else if (metrics.co2 > 600) riskScore += 2.5
+      else if (metrics.co2 > 400) riskScore += 1.0
     }
     if (metrics.ozone !== null) {
-      if (metrics.ozone > 50) riskScore += 20
-      else if (metrics.ozone > 30) riskScore += 10
+      if (metrics.ozone > 50) riskScore += 2.0
+      else if (metrics.ozone > 30) riskScore += 1.0
     }
-    if (riskScore === 0) return { score: 0, label: 'Safe', color: 'emerald' }
-    if (riskScore <= 30) return { score: riskScore, label: 'Good', color: 'cyan' }
-    if (riskScore <= 60) return { score: riskScore, label: 'Moderate', color: 'amber' }
-    return { score: riskScore, label: 'High Risk', color: 'red' }
+
+    const finalScore = Number(riskScore.toFixed(1))
+
+    if (finalScore === 0) return { score: 0, label: 'Safe', color: 'emerald' }
+    if (finalScore <= 3.0) return { score: finalScore, label: 'Good', color: 'cyan' }
+    if (finalScore <= 6.0) return { score: finalScore, label: 'Moderate', color: 'amber' }
+    return { score: finalScore, label: 'High Risk', color: 'red' }
   }
 
-  // ── Bioaerosol Risk Index ────────────────────────────────────────────────────
+  // ── Bioaerosol Risk Index (Scaled 0–10) ────────────────────────────────────
   // Proxy index based on environmental drivers of microbial load.
   // Direct microbial count is not measured — this estimates conditions that
   // favour bioaerosol survival, accumulation, and carrier-particle transport.
   //
-  // Scoring (0–100):
-  //   PM2.5  — carrier particles for microbes               max 30 pts
-  //   CO2    — ventilation proxy; accumulation risk         max 30 pts
-  //   Humidity — fungal/bacterial survival threshold        max 25 pts
-  //   TVOC   — MVOCs as proxy for microbial metabolism      max 15 pts
+  // Scoring (0–10):
+  //   PM2.5  — carrier particles for microbes        max 3.0 pts
+  //   CO2    — ventilation proxy; accumulation risk   max 3.0 pts
+  //   Humidity — fungal/bacterial survival threshold  max 2.5 pts
+  //   TVOC   — MVOCs as proxy for microbial metabolism max 1.5 pts
   //
   // Validate against settle-plate colony counts during pilot for calibration.
 
@@ -170,15 +173,15 @@ export function AQIDashboard() {
     // PM2.5 — carrier particles
     let pm25Score = 0
     if (metrics.pm25 !== null) {
-      if (metrics.pm25 > 35) pm25Score = 30
-      else if (metrics.pm25 > 25) pm25Score = 22
-      else if (metrics.pm25 > 10) pm25Score = 12
+      if (metrics.pm25 > 35) pm25Score = 3.0
+      else if (metrics.pm25 > 25) pm25Score = 2.2
+      else if (metrics.pm25 > 10) pm25Score = 1.2
       else pm25Score = 0
     }
     factors.push({
       name: 'PM2.5',
       contribution: pm25Score,
-      max: 30,
+      max: 3.0,
       reason: 'Microbes travel on fine particles',
     })
     total += pm25Score
@@ -186,15 +189,15 @@ export function AQIDashboard() {
     // CO2 — ventilation / bioaerosol accumulation
     let co2Score = 0
     if (metrics.co2 !== null) {
-      if (metrics.co2 > 1200) co2Score = 30
-      else if (metrics.co2 > 800) co2Score = 22
-      else if (metrics.co2 > 600) co2Score = 12
+      if (metrics.co2 > 1200) co2Score = 3.0
+      else if (metrics.co2 > 800) co2Score = 2.2
+      else if (metrics.co2 > 600) co2Score = 1.2
       else co2Score = 0
     }
     factors.push({
       name: 'CO₂',
       contribution: co2Score,
-      max: 30,
+      max: 3.0,
       reason: 'Poor ventilation → bioaerosol accumulation',
     })
     total += co2Score
@@ -202,49 +205,50 @@ export function AQIDashboard() {
     // Humidity — fungal spore proliferation + bacterial survival
     let humScore = 0
     if (metrics.humidity !== null) {
-      if (metrics.humidity > 80) humScore = 25
-      else if (metrics.humidity > 70) humScore = 18
-      else if (metrics.humidity > 60) humScore = 10
+      if (metrics.humidity > 80) humScore = 2.5
+      else if (metrics.humidity > 70) humScore = 1.8
+      else if (metrics.humidity > 60) humScore = 1.0
       else humScore = 0
     }
     factors.push({
       name: 'Humidity',
       contribution: humScore,
-      max: 25,
+      max: 2.5,
       reason: 'Above 60% favours fungal growth & pathogen survival',
     })
     total += humScore
 
     // TVOC — Microbial Volatile Organic Compounds (MVOCs)
-    // Mold and bacteria emit VOCs as metabolic byproducts
     let tvocScore = 0
     if (metrics.tvoc !== null) {
-      if (metrics.tvoc > 500) tvocScore = 15
-      else if (metrics.tvoc > 250) tvocScore = 11
-      else if (metrics.tvoc > 100) tvocScore = 6
+      if (metrics.tvoc > 500) tvocScore = 1.5
+      else if (metrics.tvoc > 250) tvocScore = 1.1
+      else if (metrics.tvoc > 100) tvocScore = 0.6
       else tvocScore = 0
     }
     factors.push({
       name: 'TVOC',
       contribution: tvocScore,
-      max: 15,
+      max: 1.5,
       reason: 'MVOCs indicate active microbial metabolism',
     })
     total += tvocScore
+
+    const finalScore = Number(total.toFixed(1))
 
     // Label and color
     let label: string
     let color: string
     let textColor: string
-    if (total <= 20) {
+    if (finalScore <= 2.0) {
       label = 'Low'
       color = 'border-emerald-500 bg-emerald-500/10'
       textColor = 'text-emerald-400'
-    } else if (total <= 45) {
+    } else if (finalScore <= 4.5) {
       label = 'Moderate'
       color = 'border-amber-500 bg-amber-500/10'
       textColor = 'text-amber-400'
-    } else if (total <= 70) {
+    } else if (finalScore <= 7.0) {
       label = 'High'
       color = 'border-orange-500 bg-orange-500/10'
       textColor = 'text-orange-400'
@@ -254,7 +258,7 @@ export function AQIDashboard() {
       textColor = 'text-red-400'
     }
 
-    return { score: total, label, color, textColor, factors }
+    return { score: finalScore, label, color, textColor, factors }
   }
 
   const getMetricStatus = (metric: string, value: number | null) => {
@@ -373,11 +377,11 @@ export function AQIDashboard() {
             {/* Outer track — Respiratory Risk */}
             <path d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#1e293b" strokeWidth="13" strokeLinecap="round"/>
 
-            {/* Outer progress — Respiratory Risk */}
-            {risk.score >= 100
+            {/* Outer progress — Respiratory Risk (0-10 scale -> multiplier 18) */}
+            {risk.score >= 10
               ? <path d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke={riskCircleColor} strokeWidth="13" strokeLinecap="round"/>
               : risk.score > 0 && (() => {
-                  const θ = (180 - risk.score * 1.8) * Math.PI / 180
+                  const θ = (180 - risk.score * 18) * Math.PI / 180
                   const ex = (100 + 85 * Math.cos(θ)).toFixed(2)
                   const ey = (100 - 85 * Math.sin(θ)).toFixed(2)
                   return <path d={`M 15 100 A 85 85 0 0 1 ${ex} ${ey}`} fill="none" stroke={riskCircleColor} strokeWidth="13" strokeLinecap="round"/>
@@ -387,12 +391,12 @@ export function AQIDashboard() {
             {/* Inner track — Bioaerosol Index */}
             <path d="M 37 100 A 63 63 0 0 1 163 100" fill="none" stroke="#1e293b" strokeWidth="11" strokeLinecap="round"/>
 
-            {/* Inner progress — Bioaerosol Index */}
+            {/* Inner progress — Bioaerosol Index (0-10 scale -> multiplier 18) */}
             {(() => {
-              const bColor = bioaerosol.score <= 20 ? '#10b981' : bioaerosol.score <= 45 ? '#f59e0b' : bioaerosol.score <= 70 ? '#f97316' : '#ef4444'
+              const bColor = bioaerosol.score <= 2.0 ? '#10b981' : bioaerosol.score <= 4.5 ? '#f59e0b' : bioaerosol.score <= 7.0 ? '#f97316' : '#ef4444'
               if (bioaerosol.score <= 0) return null
-              if (bioaerosol.score >= 100) return <path d="M 37 100 A 63 63 0 0 1 163 100" fill="none" stroke={bColor} strokeWidth="11" strokeLinecap="round"/>
-              const θ = (180 - bioaerosol.score * 1.8) * Math.PI / 180
+              if (bioaerosol.score >= 10) return <path d="M 37 100 A 63 63 0 0 1 163 100" fill="none" stroke={bColor} strokeWidth="11" strokeLinecap="round"/>
+              const θ = (180 - bioaerosol.score * 18) * Math.PI / 180
               const ex = (100 + 63 * Math.cos(θ)).toFixed(2)
               const ey = (100 - 63 * Math.sin(θ)).toFixed(2)
               return <path d={`M 37 100 A 63 63 0 0 1 ${ex} ${ey}`} fill="none" stroke={bColor} strokeWidth="11" strokeLinecap="round"/>
@@ -403,13 +407,13 @@ export function AQIDashboard() {
             <line x1="100" y1="15" x2="100" y2="9" stroke="#334155" strokeWidth="1"/>
             <line x1="185" y1="100" x2="190" y2="105" stroke="#334155" strokeWidth="1"/>
             <text x="10" y="112" textAnchor="middle" fontSize="7" fill="#475569" fontFamily="sans-serif">0</text>
-            <text x="100" y="7" textAnchor="middle" fontSize="7" fill="#475569" fontFamily="sans-serif">50</text>
-            <text x="190" y="112" textAnchor="middle" fontSize="7" fill="#475569" fontFamily="sans-serif">100</text>
+            <text x="100" y="7" textAnchor="middle" fontSize="7" fill="#475569" fontFamily="sans-serif">5</text>
+            <text x="190" y="112" textAnchor="middle" fontSize="7" fill="#475569" fontFamily="sans-serif">10</text>
 
             {/* Legend dots */}
             <circle cx="60" cy="108" r="4" fill={riskCircleColor}/>
             <text x="67" y="111" fontSize="7" fill="#94a3b8" fontFamily="sans-serif">Respiratory</text>
-            <circle cx="120" cy="108" r="3" fill={bioaerosol.score <= 20 ? '#10b981' : bioaerosol.score <= 45 ? '#f59e0b' : bioaerosol.score <= 70 ? '#f97316' : '#ef4444'}/>
+            <circle cx="120" cy="108" r="3" fill={bioaerosol.score <= 2.0 ? '#10b981' : bioaerosol.score <= 4.5 ? '#f59e0b' : bioaerosol.score <= 7.0 ? '#f97316' : '#ef4444'}/>
             <text x="126" y="111" fontSize="7" fill="#94a3b8" fontFamily="sans-serif">Bioaerosol</text>
           </svg>
 
@@ -609,7 +613,7 @@ export function AQIDashboard() {
             <p className="text-slate-400 text-xs">Fungal spore proliferation risk. Also reduces UVGI effectiveness.</p>
           </div>
           <div>
-            <p className="font-medium text-amber-400 mb-1">Bioaerosol Index &gt; 45</p>
+            <p className="font-medium text-amber-400 mb-1">Bioaerosol Index &gt; 4.5</p>
             <p className="text-slate-400 text-xs">Estimated proxy only — validate against settle plate data during pilot.</p>
           </div>
         </CardContent>
