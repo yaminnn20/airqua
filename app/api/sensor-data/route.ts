@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
       [hospitalId, hours]
     )
 
-    // Note: Removed pool.end() so the connection stays open for the next request!
     return NextResponse.json({ success: true, data: result.rows || [] })
   } catch (error) {
     console.error('[API GET Error]:', error)
@@ -58,38 +57,51 @@ export async function POST(request: NextRequest) {
   try {
     // Parse the payload sent by EMQX
     const latestMessage = await request.json()
-    
-    console.log('[Webhook POST] Received packet:', JSON.stringify(latestMessage))
+
+    // LOG 1: Confirm data has arrived at Vercel from EMQX and print the exact data object
+    console.log('─── NEW DATA INCOMING FROM EMQX ───')
+    console.log('[WEBHOOK] Received Payload Data:', JSON.stringify(latestMessage, null, 2))
 
     const pool = getPool()
     if (!pool) {
+      console.error('[WEBHOOK ERROR] Database pool creation failed!')
       return NextResponse.json({ success: false, error: 'Database connection failed' }, { status: 500 })
     }
+
+    // Prepare variables for insertion
+    const dataValues = [
+      latestMessage.pm1 ?? null,
+      latestMessage.pm25 ?? null,
+      latestMessage.pm10 ?? null,
+      latestMessage.co2 ?? null,
+      latestMessage.ozone ?? null,
+      latestMessage.tvoc ?? null,
+      latestMessage.temperature ?? null,
+      latestMessage.humidity ?? null,
+      latestMessage.aqi ?? null,
+      latestMessage.hospital_id ?? 'default'
+    ]
+
+    // LOG 2: Alert that the script is currently dispatching this specific data block to Neon
+    console.log('[NEON] Dispatching data packet to Postgres database...');
 
     // Save directly to Neon database
     await pool.query(
       `INSERT INTO sensor_readings 
        (pm1, pm25, pm10, co2, ozone, tvoc, temperature, humidity, aqi, hospital_id, timestamp) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
-      [
-        latestMessage.pm1 ?? null,
-        latestMessage.pm25 ?? null,
-        latestMessage.pm10 ?? null,
-        latestMessage.co2 ?? null,
-        latestMessage.ozone ?? null,
-        latestMessage.tvoc ?? null,
-        latestMessage.temperature ?? null,
-        latestMessage.humidity ?? null,
-        latestMessage.aqi ?? null,
-        latestMessage.hospital_id ?? 'default'
-      ]
+      dataValues
     )
+
+    // LOG 3: Confirm database execution passed successfully
+    console.log('[SUCCESS] Data row successfully inserted and synced to Neon Database!')
+    console.log('───────────────────────────────────')
 
     return NextResponse.json({ success: true, message: 'Data synced to Neon successfully' }, { status: 200 })
   } catch (error) {
     console.error('[API POST Error]:', error)
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Internal Server Error' }, 
+      { success: false, error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }
     )
   }
