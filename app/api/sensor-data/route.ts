@@ -96,6 +96,8 @@ export async function POST(request: NextRequest) {
     // LOG 3: Confirm database execution passed successfully
     console.log('[SUCCESS] Data row successfully inserted and synced to Neon Database!')
     console.log('───────────────────────────────────')
+// Wait 2 seconds before acknowledging the webhook
+await new Promise(resolve => setTimeout(resolve, 2000))
 
     return NextResponse.json({ success: true, message: 'Data synced to Neon successfully' }, { status: 200 })
   } catch (error) {
