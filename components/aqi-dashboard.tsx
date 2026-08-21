@@ -392,7 +392,7 @@ export function AQIDashboard() {
             <circle cx="60" cy="108" r="4" fill={riskCircleColor}/>
             <text x="67" y="111" fontSize="7" fill="#94a3b8" fontFamily="sans-serif">Respiratory</text>
             <circle cx="120" cy="108" r="3" fill={bioaerosol.score <= 2.0 ? '#10b981' : bioaerosol.score <= 4.5 ? '#f59e0b' : bioaerosol.score <= 7.0 ? '#f97316' : '#ef4444'}/>
-            <text x="126" y="111" fontSize="7" fill="#94a3b8" fontFamily="sans-serif">Bioaerosol</text>
+            <text x="126" y="111" fontSize="7" fill="#94a3b8" fontFamily="sans-serif">Infection</text>
           </svg>
 
           <div className="grid grid-cols-2 w-full max-w-sm gap-6 mt-2">
@@ -406,7 +406,7 @@ export function AQIDashboard() {
               }`}>{risk.label}</p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest">Bioaerosol Index</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest">Infection risk Index</p>
               <p className="text-3xl font-bold text-white mt-1">{bioaerosol.score}</p>
               <p className={`text-sm font-semibold mt-0.5 ${bioaerosol.textColor}`}>{bioaerosol.label}</p>
             </div>
